@@ -1,0 +1,81 @@
+-- [[ RIVALS COMBAT MODULE - FINAL VERSION ]]
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local SETTINGS = {
+    SILENT_AIM = true,
+    RAPID_FIRE = true,
+    TARGET_PART = "Head"
+}
+
+-- [1] Infinite ESP (Already Working)
+local function AddESP(p)
+    if p == LocalPlayer then return end
+    local function Apply()
+        local char = p.Character or p.CharacterAdded:Wait()
+        local hl = char:FindFirstChild("Highlight") or Instance.new("Highlight")
+        hl.FillColor = Color3.fromRGB(255, 0, 0)
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        hl.Parent = char
+    end
+    task.spawn(Apply)
+    p.CharacterAdded:Connect(Apply)
+end
+
+-- [2] Get Closest Target
+local function GetTarget()
+    local target = nil
+    local dist = math.huge
+    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(SETTINGS.TARGET_PART) then
+            local part = p.Character[SETTINGS.TARGET_PART]
+            local pos, vis = Camera:WorldToViewportPoint(part.Position)
+            if vis then
+                local mag = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                if mag < dist then
+                    target = part
+                    dist = mag
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- [3] Silent Aim & Rapid Fire Hooking
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+setreadonly(mt, false)
+
+mt.__namecall = newcclosure(function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    
+    -- Silent Aim: Bullets go to head
+    if SETTINGS.SILENT_AIM and (method == "Raycast" or method == "FindPartOnRay") then
+        local t = GetTarget()
+        if t then
+            return t, t.Position, t.CFrame.LookVector, t.Material
+        end
+    end
+    
+    -- Rapid Fire: Multi-shot
+    if SETTINGS.RAPID_FIRE and method == "FireServer" and self.Name == "Shoot" then
+        for i = 1, 2 do -- Double the fire rate safely
+            task.spawn(function()
+                oldNamecall(self, unpack(args))
+            end)
+        end
+    end
+    
+    return oldNamecall(self, ...)
+end)
+setreadonly(mt, true)
+
+for _, p in pairs(Players:GetPlayers()) do AddESP(p) end
+Players.PlayerAdded:Connect(AddESP)
+
