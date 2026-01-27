@@ -1,0 +1,65 @@
+-- NO KOREAN / CLEAN CODE FOR GITHUB
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local CFG = {
+    AIM = true,
+    SMOOTH = 0,
+    ESP = true,
+    NORECOIL = true -- Added No Recoil
+}
+
+-- [1] ESP & Highlight
+local function AddESP(p)
+    if p == LocalPlayer then return end
+    p.CharacterAdded:Connect(function(char)
+        local hl = Instance.new("Highlight")
+        hl.FillColor = Color3.new(1, 0, 0)
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        hl.Parent = char
+    end)
+    if p.Character then
+        local hl = Instance.new("Highlight")
+        hl.FillColor = Color3.new(1, 0, 0)
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        hl.Parent = p.Character
+    end
+end
+
+-- [2] No Recoil Logic
+if CFG.NORECOIL then
+    game:GetService("RunService").Stepped:Connect(function()
+        -- Direct Camera Offset Reset
+        Camera.ViewmodelCameraOffset = CFrame.new(0, 0, 0)
+    end)
+end
+
+-- [3] Aim System
+RunService.RenderStepped:Connect(function()
+    if not CFG.AIM then return end
+    local target = nil
+    local dist = math.huge
+    
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+            if vis then
+                local mag = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                if mag < dist then
+                    target = p.Character.Head
+                    dist = mag
+                end
+            end
+        end
+    end
+    
+    if target then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+    end
+end)
+
+for _, p in pairs(Players:GetPlayers()) do AddESP(p) end
+Players.PlayerAdded:Connect(AddESP)
+
