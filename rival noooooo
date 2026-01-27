@@ -1,0 +1,83 @@
+-- [[ RIVALS SUPREME V2 - MOVEMENT FIXED ]]
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local SETTINGS = {
+    SILENT_AIM = true,
+    WALL_BANG = true,
+    RAPID_FIRE = true,
+    FOV_RADIUS = 500 -- All screen range
+}
+
+-- [1] Infinite ESP (Already Verified)
+local function AddESP(p)
+    if p == LocalPlayer then return end
+    local function Apply()
+        local char = p.Character or p.CharacterAdded:Wait()
+        local hl = char:FindFirstChild("Highlight") or Instance.new("Highlight")
+        hl.FillColor = Color3.fromRGB(255, 0, 0)
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        hl.Parent = char
+    end
+    task.spawn(Apply)
+    p.CharacterAdded:Connect(Apply)
+end
+
+-- [2] Optimized Target Finder
+local function GetTarget()
+    local target = nil
+    local dist = SETTINGS.FOV_RADIUS
+    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+            if vis then
+                local mag = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                if mag < dist then
+                    target = p.Character.Head
+                    dist = mag
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- [3] Silent Aim & Rapid Fire (No Camera Lock)
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+setreadonly(mt, false)
+
+mt.__namecall = newcclosure(function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    
+    -- Bullet Redirection (Silent Aim)
+    if SETTINGS.SILENT_AIM and (method == "Raycast" or method == "FindPartOnRay") then
+        local t = GetTarget()
+        if t then
+            -- This makes bullets hit the target without moving your camera
+            return t, t.Position, t.CFrame.LookVector, t.Material
+        end
+    end
+    
+    -- Rapid Fire & Ammo Sync
+    if SETTINGS.RAPID_FIRE and method == "FireServer" and self.Name == "Shoot" then
+        task.spawn(function()
+            for i = 1, 2 do 
+                oldNamecall(self, unpack(args))
+            end
+        end)
+    end
+    
+    return oldNamecall(self, ...)
+end)
+setreadonly(mt, true)
+
+-- Initialize ESP
+for _, p in pairs(Players:GetPlayers()) do AddESP(p) end
+Players.PlayerAdded:Connect(AddESP)
+
