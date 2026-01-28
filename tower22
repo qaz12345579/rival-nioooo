@@ -1,0 +1,77 @@
+-- [[ qazqazqaz - SILENT OVERLOAD V8 ]]
+-- [[ OPTIMIZED TO PREVENT "GAMEPLAY PAUSED" ]]
+
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("qazqazqaz - SILENT", "Midnight")
+
+local RunService = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+_G.AttackActive = false
+_G.Intensity = 50
+
+local Main = Window:NewTab("Silent Engine")
+local Section = Main:NewSection("NETWORK INJECTOR")
+
+-- [[ UI ELEMENTS ]]
+
+Section:NewToggle("ACTIVATE SILENT LAG", "Target others without self-freezing", function(state)
+    _G.AttackActive = state
+end)
+
+Section:NewSlider("ATTACK INTENSITY", "Adjust to prevent Gameplay Paused", 500, 50, function(v)
+    _G.Intensity = v
+end)
+
+-- [[ OPTIMIZED PHYSICS INJECTION ]]
+
+local function SendSilentPacket()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if hrp then
+        -- Use Assembly properties to disrupt nearby client interpolation
+        for i = 1, math.floor(_G.Intensity / 10) do
+            -- These values are calculated to be right below the 'Auto-Kick' threshold
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 50000, 0)
+            hrp.AssemblyAngularVelocity = Vector3.new(50000, 50000, 50000)
+            
+            -- Small CFrame shift to force server-wide replication
+            hrp.CFrame = hrp.CFrame * CFrame.new(0, 0.00001, 0)
+        end
+        -- Reset to prevent local character glitching
+        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+    end
+end
+
+-- Use Heartbeat for stability and PreSimulation for packet priority
+RunService.Heartbeat:Connect(function()
+    if _G.AttackActive then
+        -- Lower simulation radius to prevent local data overflow (prevents Pause)
+        sethiddenproperty(LocalPlayer, "SimulationRadius", 500)
+        sethiddenproperty(LocalPlayer, "MaxSimulationRadius", 500)
+        
+        task.spawn(SendSilentPacket)
+    end
+end)
+
+-- [[ FLOATING MENU BUTTON ]]
+
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainBtn = Instance.new("TextButton", ScreenGui)
+local UICorner = Instance.new("UICorner", MainBtn)
+
+MainBtn.Size = UDim2.new(0, 120, 0, 40)
+MainBtn.Position = UDim2.new(0, 20, 0.45, 0)
+MainBtn.Text = "SILENT V8"
+MainBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainBtn.Font = Enum.Font.Code
+MainBtn.TextSize = 15
+MainBtn.Draggable = true
+UICorner.CornerRadius = UDim.new(0, 8)
+
+MainBtn.MouseButton1Click:Connect(function()
+    Library:ToggleUI()
+end)
+
