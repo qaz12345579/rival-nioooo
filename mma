@@ -1,0 +1,138 @@
+-- [[ qazqazqaz - OMNI SUPREME V19 ]]
+-- [[ FLY + NOCLIP + 300 STUD REACH + TOWER LAG ]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- [[ GLOBAL STATES ]]
+getgenv().FlyActive = false
+getgenv().ReachActive = false
+getgenv().NoclipActive = false
+getgenv().LagActive = false
+getgenv().FlySpeed = 50
+getgenv().ReachSize = 30 -- 기본값 30
+
+-- [[ UI CONSTRUCT ]]
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame", ScreenGui)
+local Title = Instance.new("TextLabel", MainFrame)
+local ToggleBtn = Instance.new("TextButton", ScreenGui)
+
+MainFrame.Size = UDim2.new(0, 230, 0, 400) -- 슬라이더 추가로 세로 길이 확장
+MainFrame.Position = UDim2.new(0.5, -115, 0.5, -200)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = false
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local Corner = Instance.new("UICorner", MainFrame)
+Corner.CornerRadius = UDim.new(0, 15)
+
+Title.Size = UDim2.new(1, 0, 0, 45)
+Title.Text = "qaz OMNI V19"
+Title.TextColor3 = Color3.fromRGB(255, 0, 0)
+Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+local tCorner = Instance.new("UICorner", Title)
+tCorner.CornerRadius = UDim.new(0, 15)
+
+-- [[ UI ELEMENTS MAKER ]]
+local function AddBtn(text, pos, color, callback)
+    local btn = Instance.new("TextButton", MainFrame)
+    btn.Size = UDim2.new(0.85, 0, 0, 35)
+    btn.Position = pos
+    btn.Text = text
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 13
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Buttons
+AddBtn("FLY MODE", UDim2.new(0.075, 0, 0.15, 0), Color3.fromRGB(30, 30, 30), function() getgenv().FlyActive = not getgenv().FlyActive end)
+AddBtn("NOCLIP (WALL)", UDim2.new(0.075, 0, 0.25, 0), Color3.fromRGB(30, 30, 30), function() getgenv().NoclipActive = not getgenv().NoclipActive end)
+AddBtn("WEAPON REACH", UDim2.new(0.075, 0, 0.35, 0), Color3.fromRGB(30, 30, 30), function() getgenv().ReachActive = not getgenv().ReachActive end)
+AddBtn("TOWER LAG BOMB", UDim2.new(0.075, 0, 0.45, 0), Color3.fromRGB(60, 0, 0), function() getgenv().LagActive = not getgenv().LagActive end)
+
+-- Reach Slider (Custom)
+local ReachLabel = Instance.new("TextLabel", MainFrame)
+ReachLabel.Size = UDim2.new(0.85, 0, 0, 20)
+ReachLabel.Position = UDim2.new(0.075, 0, 0.55, 0)
+ReachLabel.Text = "REACH DISTANCE: 30"
+ReachLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+ReachLabel.BackgroundTransparency = 1
+ReachLabel.Font = Enum.Font.Gotham
+ReachLabel.TextSize = 12
+
+local ReachSlider = Instance.new("TextButton", MainFrame)
+ReachSlider.Size = UDim2.new(0.85, 0, 0, 30)
+ReachSlider.Position = UDim2.new(0.075, 0, 0.62, 0)
+ReachSlider.Text = "ADJUST REACH (MAX 300)"
+ReachSlider.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+ReachSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", ReachSlider).CornerRadius = UDim.new(0, 8)
+
+ReachSlider.MouseButton1Click:Connect(function()
+    if getgenv().ReachSize >= 300 then
+        getgenv().ReachSize = 15
+    else
+        getgenv().ReachSize = getgenv().ReachSize + 15
+    end
+    ReachLabel.Text = "REACH DISTANCE: " .. tostring(getgenv().ReachSize)
+end)
+
+AddBtn("SPEED +20", UDim2.new(0.075, 0, 0.75, 0), Color3.fromRGB(40, 40, 40), function() getgenv().FlySpeed = getgenv().FlySpeed + 20 end)
+AddBtn("CLOSE MENU", UDim2.new(0.075, 0, 0.88, 0), Color3.fromRGB(20, 20, 20), function() MainFrame.Visible = false end)
+
+-- [[ LOGIC KERNELS ]]
+RunService.Stepped:Connect(function()
+    if getgenv().NoclipActive and LocalPlayer.Character then
+        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
+        end
+    end
+    if getgenv().LagActive and LocalPlayer.Character then
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.AssemblyLinearVelocity = Vector3.new(math.random(-1e7, 1e7), 1e7, math.random(-1e7, 1e7))
+            sethiddenproperty(LocalPlayer, "SimulationRadius", 2500)
+        end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if getgenv().FlyActive and LocalPlayer.Character then
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Velocity = workspace.CurrentCamera.CFrame.LookVector * getgenv().FlySpeed end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if getgenv().ReachActive and LocalPlayer.Character then
+            local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+            if tool and tool:FindFirstChild("Handle") then
+                local s = getgenv().ReachSize
+                tool.Handle.Size = Vector3.new(s, s, s)
+                tool.Handle.Transparency = 0.8
+                tool.Handle.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- [[ FLOATING BUTTON ]]
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(0, 10, 0.4, 0)
+ToggleBtn.Text = "qaz"
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Draggable = true
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(1, 0)
+ToggleBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
+
