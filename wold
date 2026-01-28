@@ -1,0 +1,148 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+_G.Reach = 20
+_G.ReachEnabled = false
+_G.NoclipEnabled = false
+
+----------------------------------------------------------------
+-- [1] GUI Setup
+----------------------------------------------------------------
+
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local Container = Instance.new("ScrollingFrame")
+local UIListLayout = Instance.new("UIListLayout")
+
+ScreenGui.Name = "GeminiSpecialMenu"
+ScreenGui.Parent = (game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui"))
+ScreenGui.ResetOnSpawn = false
+
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.5, -100, 0.5, -125)
+MainFrame.Size = UDim2.new(0, 220, 0, 280)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "GEMINI SPECIAL"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 16
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = Title
+
+Container.Name = "Container"
+Container.Parent = MainFrame
+Container.BackgroundTransparency = 1
+Container.Position = UDim2.new(0, 10, 0, 50)
+Container.Size = UDim2.new(1, -20, 1, -60)
+Container.ScrollBarThickness = 2
+
+UIListLayout.Parent = Container
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 10)
+
+----------------------------------------------------------------
+-- [2] Button Creator
+----------------------------------------------------------------
+
+local function createToggleButton(text, callback)
+    local Button = Instance.new("TextButton")
+    local state = false
+    
+    Button.Name = text .. "Btn"
+    Button.Parent = Container
+    Button.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    Button.Size = UDim2.new(1, 0, 0, 40)
+    Button.Font = Enum.Font.Gotham
+    Button.Text = text .. ": OFF"
+    Button.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Button.TextSize = 14
+    Button.AutoButtonColor = false
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    btnCorner.Parent = Button
+    
+    Button.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            Button.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
+            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Button.Text = text .. ": ON"
+        else
+            Button.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+            Button.TextColor3 = Color3.fromRGB(200, 200, 200)
+            Button.Text = text .. ": OFF"
+        end
+        callback(state)
+    end)
+end
+
+createToggleButton("Sword Reach", function(val) _G.ReachEnabled = val end)
+createToggleButton("Noclip", function(val) _G.NoclipEnabled = val end)
+
+----------------------------------------------------------------
+-- [3] Core Logic
+----------------------------------------------------------------
+
+RunService.RenderStepped:Connect(function()
+    if _G.ReachEnabled then
+        local char = LocalPlayer.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        local handle = tool and tool:FindFirstChild("Handle")
+        
+        if handle then
+            for _, v in pairs(Players:GetPlayers()) do
+                if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                    local hrp = v.Character.HumanoidRootPart
+                    if (handle.Position - hrp.Position).Magnitude <= _G.Reach then
+                        if firetouchinterest then
+                            firetouchinterest(hrp, handle, 0)
+                            firetouchinterest(hrp, handle, 1)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if _G.NoclipEnabled and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+----------------------------------------------------------------
+-- [4] Toggle Menu
+----------------------------------------------------------------
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Enum.KeyCode.Insert then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+print("Menu Loaded. Toggle Key: Insert")
+
