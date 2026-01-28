@@ -1,0 +1,112 @@
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+-- Window
+local Window = Rayfield:CreateWindow({
+   Name = "aosuwvzh",
+   LoadingTitle = "aosuwvzh",
+   LoadingSubtitle = "interface booting",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "aosuwvzh",
+      FileName = "config"
+   }
+})
+
+-- Globals
+local _G = {
+    Aimbot = false,
+    AimbotSmoothness = 0.5,
+    ESPEnabled = false
+}
+
+-- ================= COMBAT TAB =================
+local CombatTab = Window:CreateTab("Combat", 4483362458)
+local CombatSection = CombatTab:CreateSection("Aim Control")
+
+CombatTab:CreateToggle({
+   Name = "Aimbot",
+   CurrentValue = false,
+   Callback = function(v)
+      _G.Aimbot = v
+   end
+})
+
+CombatTab:CreateSlider({
+   Name = "Smoothness",
+   Range = {0.05, 1},
+   Increment = 0.05,
+   CurrentValue = 0.5,
+   Callback = function(v)
+      _G.AimbotSmoothness = v
+   end
+})
+
+-- ================= VISUAL TAB =================
+local VisualTab = Window:CreateTab("Visuals", 4483345998)
+local VisualSection = VisualTab:CreateSection("ESP")
+
+VisualTab:CreateToggle({
+   Name = "Player ESP",
+   CurrentValue = false,
+   Callback = function(v)
+      _G.ESPEnabled = v
+   end
+})
+
+-- ================= UI TAB =================
+local UITab = Window:CreateTab("UI", 4483364237)
+local UISection = UITab:CreateSection("Interface")
+
+UITab:CreateKeybind({
+   Name = "Toggle Menu",
+   CurrentKeybind = "RightShift",
+   HoldToInteract = false,
+   Callback = function()
+      Rayfield:ToggleUI()
+   end
+})
+
+-- ================= AIMBOT LOOP =================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+RunService.RenderStepped:Connect(function()
+    if not _G.Aimbot then return end
+
+    local target
+    local shortest = math.huge
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer
+        and p.Character
+        and p.Character:FindFirstChild("HumanoidRootPart") then
+
+            local pos, onScreen =
+                Camera:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
+
+            if onScreen then
+                local dist =
+                    (Vector2.new(pos.X, pos.Y) - UIS:GetMouseLocation()).Magnitude
+
+                if dist < shortest then
+                    shortest = dist
+                    target = p
+                end
+            end
+        end
+    end
+
+    if target then
+        local look =
+            CFrame.new(Camera.CFrame.Position,
+            target.Character.HumanoidRootPart.Position)
+
+        Camera.CFrame =
+            Camera.CFrame:Lerp(look, _G.AimbotSmoothness)
+    end
+end)
+
+Rayfield:LoadConfiguration()
